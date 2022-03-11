@@ -1,10 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <link rel="stylesheet" href="/main.css">
 </head>
 <body>
+
+<div th:replace="fragments.html :: logo"></div>
+<div th:replace="fragments.html :: menu"></div>
+
+<div id="content">
+    <div th:each="crypto : ${cryptos}" class="cryptos" id="cryptos">
+        <div th:text="'Crypto: ' + ${crypto}"></div>
+    </div>
+</div>
 
 </body>
 </html>

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+<body>
+
+<div id="logo" th:fragment="logo">
+  <img src="/logo.png">
+</div>
+
+<div id="menu" th:fragment="menu">
+  <a href="/index">Main</a>
+  <a th:if="${logged == false}" href="/login">Login</a>
+  <a th:if="${logged == true}" href="/logout">Logout</a>
+  <a th:if="${logged == false}" href="/register">Register</a>
+</div>
+
+</body>
+</html>

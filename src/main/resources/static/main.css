@@ -1,0 +1,52 @@
+body {
+    background-color: #000000;
+}
+
+#logo {
+    width: 400px;
+    margin: 0px auto;
+    display: block;
+
+}
+
+#logo img {
+    width: 100%;
+}
+
+#menu {
+    text-align: center;
+    border-bottom: 1px solid white;
+    height: 35px;
+}
+
+#menu a {
+    font-size: 20px;
+    color: #ffffff;
+    text-decoration: none;
+    margin: 5px 15px;
+    padding: 5px 10px;
+    border-radius: 10px;
+}
+
+#menu a:hover {
+    background: #1A1A1A;
+    color: #FE9331;
+}
+
+#content {
+    width: 75%;
+    margin: 5px auto;
+    text-align: center;
+}
+
+#content label {
+    display: block;
+}
+
+#content p {
+    color: #ffffff;
+}
+
+#cryptos {
+    color: #ffffff;
+}
