@@ -41,9 +41,10 @@ body {
 
 #content label {
     display: block;
+    padding: 5px 5px;
 }
 
-#content p {
+#content a {
     color: #ffffff;
 }
 

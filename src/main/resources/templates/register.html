@@ -12,11 +12,12 @@
 
 <div id="content">
     <form action="#" method="post" th:action="@{/register}" th:object="${user}">
-        <p th:errors="*{username}" class="error">Username error</p>
+        <a th:errors="*{username}" class="error">Username error</a>
+        <a th:if="${userExist == true}">User with this username exist</a>
         <label>
             <input type="text" placeholder="username" name="username" th:field="*{username}">
         </label>
-        <p th:errors="*{password}" class="error">Password error</p>
+        <a th:errors="*{password}" class="error">Password error</a>
         <label>
             <input type="password" placeholder="password" name="password" th:field="*{password}">
         </label>

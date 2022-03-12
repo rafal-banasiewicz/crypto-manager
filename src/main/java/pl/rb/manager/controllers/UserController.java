@@ -33,14 +33,17 @@ public class UserController {
     @PostMapping(value = "/login")
     public String auth(Model model, @Valid @ModelAttribute("user") UserDto userDto, BindingResult bindingResult) {
         model.addAttribute("logged", this.sessionObject.isLogged());
+        model.addAttribute("wrongCredentials", false);
         if (bindingResult.hasErrors()) {
             return "login";
         }
         this.userService.auth(userDto);
         if (this.sessionObject.isLogged()) {
             return "redirect:/index";
+        } else {
+            model.addAttribute("wrongCredentials", true);
+            return "login";
         }
-        return "redirect:login";
 
     }
 
@@ -54,7 +57,12 @@ public class UserController {
     @PostMapping("/register")
     String register(Model model, @Valid @ModelAttribute("user") UserDto userDto, BindingResult bindingResult) {
         model.addAttribute("logged", this.sessionObject.isLogged());
-        if (bindingResult.hasErrors() || userService.exists(userDto.getUsername())) {
+        model.addAttribute("userExist", false);
+        if (bindingResult.hasErrors()) {
+            return "register";
+        }
+        if (userService.exists(userDto.getUsername())) {
+            model.addAttribute("userExist", true);
             return "register";
         } else {
             userService.register(userDto);
