@@ -1,27 +1,24 @@
 package pl.rb.manager.service.impl;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pl.rb.manager.mapper.UserDtoMapper;
 import pl.rb.manager.model.User;
 import pl.rb.manager.model.dto.UserDto;
 import pl.rb.manager.repository.UserRepository;
 import pl.rb.manager.service.IUserService;
 import pl.rb.manager.session.SessionObject;
 
-import javax.annotation.Resource;
 import java.util.Optional;
 
 @Service
 public class UserService implements IUserService {
 
-    @Autowired
-    UserRepository userRepository;
-    @Autowired
-    UserDtoMapper userDtoMapper;
+    private final UserRepository userRepository;
+    private final SessionObject sessionObject;
 
-    @Resource
-    SessionObject sessionObject;
+    public UserService(UserRepository userRepository, SessionObject sessionObject) {
+        this.userRepository = userRepository;
+        this.sessionObject = sessionObject;
+    }
 
     @Override
     public void auth(UserDto userDto) {
@@ -33,7 +30,7 @@ public class UserService implements IUserService {
 
     @Override
     public void register(UserDto userDto) {
-        User user = this.userDtoMapper.map(userDto);
+        User user = User.toUser(userDto);
         this.userRepository.save(user);
     }
 

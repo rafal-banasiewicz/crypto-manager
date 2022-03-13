@@ -1,6 +1,5 @@
 package pl.rb.manager.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -11,7 +10,6 @@ import pl.rb.manager.model.zonda.ZondaRequest;
 import pl.rb.manager.service.IZondaService;
 import pl.rb.manager.session.SessionObject;
 
-import javax.annotation.Resource;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -22,11 +20,13 @@ import static pl.rb.manager.utils.CommonHelper.loadCommonZondaAttributes;
 @Controller
 public class ZondaController {
 
-    @Autowired
-    IZondaService zondaService;
+    private final IZondaService zondaService;
+    private final SessionObject sessionObject;
 
-    @Resource
-    SessionObject sessionObject;
+    public ZondaController(IZondaService zondaService, SessionObject sessionObject) {
+        this.zondaService = zondaService;
+        this.sessionObject = sessionObject;
+    }
 
     @GetMapping(value = "/summarize")
     public String summarize(Model model) {

@@ -1,6 +1,5 @@
 package pl.rb.manager.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -11,17 +10,18 @@ import pl.rb.manager.model.dto.UserDto;
 import pl.rb.manager.service.IUserService;
 import pl.rb.manager.session.SessionObject;
 
-import javax.annotation.Resource;
 import javax.validation.Valid;
 
 @Controller
 public class UserController {
 
-    @Autowired
-    IUserService userService;
+    private final IUserService userService;
+    private final SessionObject sessionObject;
 
-    @Resource
-    SessionObject sessionObject;
+    public UserController(IUserService userService, SessionObject sessionObject) {
+        this.userService = userService;
+        this.sessionObject = sessionObject;
+    }
 
     @GetMapping(value = "/login")
     public String login(Model model) {

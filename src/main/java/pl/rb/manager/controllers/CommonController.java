@@ -5,15 +5,17 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import pl.rb.manager.session.SessionObject;
 
-import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 
 @Controller
 public class CommonController {
 
-    @Resource
-    SessionObject sessionObject;
+    private final SessionObject sessionObject;
+
+    public CommonController(SessionObject sessionObject) {
+        this.sessionObject = sessionObject;
+    }
 
     @GetMapping(value = "/index")
     public String main(Model model) {
