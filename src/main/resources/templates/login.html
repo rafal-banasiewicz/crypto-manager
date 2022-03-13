@@ -13,7 +13,7 @@
 <div id="content">
     <form action="#" method="post" th:action="@{/login}" th:object="${user}">
         <a th:errors="*{username}" class="error">Username error</a>
-        <a th:if="${wrongCredentials == true}">Wrong credentials</a>
+        <a th:if="${wrongCredentials}">Wrong credentials</a>
         <label>
             <input type="text" placeholder="username" name="username">
         </label>

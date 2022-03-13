@@ -55,17 +55,17 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    String register(Model model, @Valid @ModelAttribute("user") UserDto userDto, BindingResult bindingResult) {
+    public String register(Model model, @Valid @ModelAttribute("user") UserDto userDto, BindingResult bindingResult) {
         model.addAttribute("logged", this.sessionObject.isLogged());
         model.addAttribute("userExist", false);
         if (bindingResult.hasErrors()) {
             return "register";
         }
-        if (userService.exists(userDto.getUsername())) {
+        if (this.userService.exists(userDto.getUsername())) {
             model.addAttribute("userExist", true);
             return "register";
         } else {
-            userService.register(userDto);
+            this.userService.register(userDto);
             return "redirect:login";
         }
     }

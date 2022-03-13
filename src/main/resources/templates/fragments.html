@@ -12,9 +12,10 @@
 
 <div id="menu" th:fragment="menu">
   <a href="/index">Main</a>
-  <a th:if="${logged == false}" href="/login">Login</a>
-  <a th:if="${logged == true}" href="/logout">Logout</a>
-  <a th:if="${logged == false}" href="/register">Register</a>
+  <a href="/summarize">Summarize</a>
+  <a th:if="${!logged}" href="/login">Login</a>
+  <a th:if="${logged}" href="/logout">Logout</a>
+  <a th:if="${!logged}" href="/register">Register</a>
 </div>
 
 </body>

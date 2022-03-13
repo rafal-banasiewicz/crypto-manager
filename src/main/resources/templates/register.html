@@ -13,7 +13,7 @@
 <div id="content">
     <form action="#" method="post" th:action="@{/register}" th:object="${user}">
         <a th:errors="*{username}" class="error">Username error</a>
-        <a th:if="${userExist == true}">User with this username exist</a>
+        <a th:if="${userExist}">User with this username exist</a>
         <label>
             <input type="text" placeholder="username" name="username" th:field="*{username}">
         </label>

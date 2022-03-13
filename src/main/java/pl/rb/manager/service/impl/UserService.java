@@ -25,7 +25,7 @@ public class UserService implements IUserService {
 
     @Override
     public void auth(UserDto userDto) {
-        Optional<User> userOptional = userRepository.findUserByUsername(userDto.getUsername());
+        Optional<User> userOptional = this.userRepository.findUserByUsername(userDto.getUsername());
         if (userOptional.isPresent() && userOptional.get().getPassword().equals(userDto.getPassword())) {
             this.sessionObject.setLogged(true);
         }
@@ -33,13 +33,13 @@ public class UserService implements IUserService {
 
     @Override
     public void register(UserDto userDto) {
-        User user = userDtoMapper.map(userDto);
-        userRepository.save(user);
+        User user = this.userDtoMapper.map(userDto);
+        this.userRepository.save(user);
     }
 
     @Override
     public boolean exists(String username) {
-        Optional<User> userOptional = userRepository.findUserByUsername(username);
+        Optional<User> userOptional = this.userRepository.findUserByUsername(username);
         return userOptional.isPresent();
     }
 

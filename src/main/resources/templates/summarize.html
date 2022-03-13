@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="/main.css">
+</head>
+<body>
+
+<div th:replace="fragments.html :: logo"></div>
+<div th:replace="fragments.html :: menu"></div>
+
+<div id="content">
+    <form action="#" method="post" th:action="@{/summarize}" th:object="${zonda}">
+        <a>Fiat:</a>
+        <label>
+            <select name="fiat">
+                <option>PLN</option>
+                <option>USD</option>
+                <option>EUR</option>
+            </select>
+        </label>
+        <a>From the start of:</a>
+        <label>
+            <select name="fromTime">
+                <option th:each="date : ${dates}" th:text="${date}"></option>
+            </select>
+        </label>
+        <a>To the end of:</a>
+        <label>
+            <select name="toTime">
+                <option th:each="date : ${dates}" th:text="${date}"></option>
+            </select>
+        </label>
+        <a>Crypto transaction:</a>
+        <label>
+            <select name="userAction">
+                <option>Buy</option>
+                <option>Sell</option>
+            </select>
+        </label>
+        <a>Public Key:</a>
+        <a th:errors="*{publicKey}" class="error">PublicKey error</a>
+        <label>
+            <input type="text" placeholder="publicKey" name="publicKey">
+        </label>
+        <a>Private Key:</a>
+        <a th:errors="*{privateKey}" class="error">PrivateKey error</a>
+        <label>
+            <input type="text" placeholder="privateKey" name="privateKey">
+        </label>
+        <label>
+            <input type="submit" value="Submit">
+        </label>
+    </form>
+    <div th:if="${spent != null} and ${userAction.equals('Buy')}" th:text="'Bought crypto for: ' + ${spent} + ' ' + ${fiat}" id="buy"></div>
+    <div th:if="${spent != null} and ${userAction.equals('Sell')}" th:text="'Sold crypto for: ' + ${spent} + ' ' + ${fiat}" id="sell"></div>
+
+</div>
+
+</body>
+</html>

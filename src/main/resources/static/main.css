@@ -1,5 +1,6 @@
 body {
     background-color: #000000;
+    color: #ffffff;
 }
 
 #logo {
@@ -34,6 +35,7 @@ body {
 }
 
 #content {
+    display: block;
     width: 75%;
     margin: 5px auto;
     text-align: center;
@@ -42,12 +44,4 @@ body {
 #content label {
     display: block;
     padding: 5px 5px;
-}
-
-#content a {
-    color: #ffffff;
-}
-
-#cryptos {
-    color: #ffffff;
 }
