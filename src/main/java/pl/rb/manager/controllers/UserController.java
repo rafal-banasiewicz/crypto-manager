@@ -1,80 +1,70 @@
 package pl.rb.manager.controllers;
 
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.web.WebAttributes;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import pl.rb.manager.model.dto.UserDto;
+import pl.rb.manager.model.User;
 import pl.rb.manager.service.IUserService;
-import pl.rb.manager.session.SessionObject;
 
+import javax.naming.AuthenticationException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
+
 
 @Controller
 public class UserController {
 
     private final IUserService userService;
-    private final SessionObject sessionObject;
 
-    public UserController(IUserService userService, SessionObject sessionObject) {
+    public UserController(IUserService userService) {
         this.userService = userService;
-        this.sessionObject = sessionObject;
     }
 
     @GetMapping(value = "/login")
     public String login(Model model) {
-        model.addAttribute("user", new UserDto());
-        model.addAttribute("logged", this.sessionObject.isLogged());
+        model.addAttribute("user", new User());
         return "login";
-    }
-
-    @PostMapping(value = "/login")
-    public String auth(Model model, @Valid @ModelAttribute("user") UserDto userDto, BindingResult bindingResult) {
-        model.addAttribute("logged", this.sessionObject.isLogged());
-        model.addAttribute("wrongCredentials", false);
-        if (bindingResult.hasErrors()) {
-            return "login";
-        }
-        this.userService.auth(userDto);
-        if (this.sessionObject.isLogged()) {
-            return "redirect:/index";
-        } else {
-            model.addAttribute("wrongCredentials", true);
-            return "login";
-        }
-
     }
 
     @GetMapping(value = "/register")
     public String register(Model model) {
-        model.addAttribute("user", new UserDto());
-        model.addAttribute("logged", this.sessionObject.isLogged());
+        model.addAttribute("user", new User());
         return "register";
     }
 
     @PostMapping("/register")
-    public String register(Model model, @Valid @ModelAttribute("user") UserDto userDto, BindingResult bindingResult) {
-        model.addAttribute("logged", this.sessionObject.isLogged());
+    public String addUser(Model model, @ModelAttribute @Valid User user, BindingResult bindResult) {
         model.addAttribute("userExist", false);
-        if (bindingResult.hasErrors()) {
-            return "register";
-        }
-        if (this.userService.exists(userDto.getUsername())) {
+        if (bindResult.hasErrors()) return "register";
+        if (this.userService.exists(user.getEmail())) {
             model.addAttribute("userExist", true);
             return "register";
         } else {
-            this.userService.register(userDto);
-            return "redirect:login";
+            this.userService.addWithDefaultRole(user);
+            return "redirect:/index";
         }
     }
 
-    @GetMapping(value = "/logout")
-    public String logout() {
-        this.userService.logout();
-        return "redirect:index";
-
+    @GetMapping("/login-error")
+    public String login(HttpServletRequest request, Model model) {
+        HttpSession session = request.getSession(false);
+        String errorMessage = null;
+        if (session != null) {
+            BadCredentialsException ex = (BadCredentialsException) session
+                    .getAttribute(WebAttributes.AUTHENTICATION_EXCEPTION);
+            if (ex != null) {
+                errorMessage = ex.getMessage();
+            }
+        }
+        model.addAttribute("errorMessage", errorMessage);
+        model.addAttribute("user", new User());
+        return "login";
     }
 
 }

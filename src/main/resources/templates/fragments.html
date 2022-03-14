@@ -11,11 +11,11 @@
 </div>
 
 <div id="menu" th:fragment="menu">
-  <a href="/index">Main</a>
-  <a href="/summarize">Summarize</a>
-  <a th:if="${!logged}" href="/login">Login</a>
-  <a th:if="${logged}" href="/logout">Logout</a>
-  <a th:if="${!logged}" href="/register">Register</a>
+  <a href="#" th:href="@{/index}">Main</a>
+  <a href="#" th:href="@{/summarize}">Summarize</a>
+  <a sec:authorize="!isAuthenticated()" href="#" th:href="@{/login}">Login</a>
+  <a sec:authorize="isAuthenticated()" href="#" th:href="@{/logout}">Logout</a>
+  <a sec:authorize="!isAuthenticated()" href="#" th:href="@{/register}">Register</a>
 </div>
 
 </body>

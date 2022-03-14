@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import pl.rb.manager.model.zonda.ZondaRequest;
 import pl.rb.manager.service.IZondaService;
-import pl.rb.manager.session.SessionObject;
 
 import javax.validation.Valid;
 import java.io.IOException;
@@ -21,23 +20,21 @@ import static pl.rb.manager.utils.CommonHelper.loadCommonZondaAttributes;
 public class ZondaController {
 
     private final IZondaService zondaService;
-    private final SessionObject sessionObject;
 
-    public ZondaController(IZondaService zondaService, SessionObject sessionObject) {
+    public ZondaController(IZondaService zondaService) {
         this.zondaService = zondaService;
-        this.sessionObject = sessionObject;
     }
 
     @GetMapping(value = "/summarize")
     public String summarize(Model model) {
         model.addAttribute("zonda", new ZondaRequest());
-        loadCommonZondaAttributes(model, this.sessionObject);
+        loadCommonZondaAttributes(model);
         return "summarize";
     }
 
     @PostMapping(value = "/summarize")
     public String summarize(Model model, @Valid @ModelAttribute("zonda") ZondaRequest zondaRequest, BindingResult bindingResult) throws NoSuchAlgorithmException, IOException, InvalidKeyException {
-        loadCommonZondaAttributes(model, this.sessionObject);
+        loadCommonZondaAttributes(model);
         if (bindingResult.hasErrors()) {
             return "summarize";
         }

@@ -1,47 +1,43 @@
 package pl.rb.manager.service.impl;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pl.rb.manager.model.User;
-import pl.rb.manager.model.dto.UserDto;
+import pl.rb.manager.model.UserRole;
 import pl.rb.manager.repository.UserRepository;
+import pl.rb.manager.repository.UserRoleRepository;
 import pl.rb.manager.service.IUserService;
-import pl.rb.manager.session.SessionObject;
 
 import java.util.Optional;
 
 @Service
 public class UserService implements IUserService {
 
+    private static final String DEFAULT_ROLE = "USER";
     private final UserRepository userRepository;
-    private final SessionObject sessionObject;
+    private final UserRoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, SessionObject sessionObject) {
+    public UserService(UserRepository userRepository,
+                       UserRoleRepository roleRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
-        this.sessionObject = sessionObject;
+        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
-    public void auth(UserDto userDto) {
-        Optional<User> userOptional = this.userRepository.findUserByUsername(userDto.getUsername());
-        if (userOptional.isPresent() && userOptional.get().getPassword().equals(userDto.getPassword())) {
-            this.sessionObject.setLogged(true);
-        }
+    public void addWithDefaultRole(User user) {
+        UserRole defaultRole = roleRepository.findByRole(DEFAULT_ROLE);
+        user.getRoles().add(defaultRole);
+        String passwordHash = passwordEncoder.encode(user.getPassword());
+        user.setPassword(passwordHash);
+        userRepository.save(user);
     }
 
     @Override
-    public void register(UserDto userDto) {
-        User user = User.toUser(userDto);
-        this.userRepository.save(user);
-    }
-
-    @Override
-    public boolean exists(String username) {
-        Optional<User> userOptional = this.userRepository.findUserByUsername(username);
+    public boolean exists(String email) {
+        Optional<User> userOptional = this.userRepository.findByEmail(email);
         return userOptional.isPresent();
     }
 
-    @Override
-    public void logout() {
-        this.sessionObject.setLogged(false);
-    }
 }

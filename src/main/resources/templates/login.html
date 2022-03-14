@@ -12,10 +12,10 @@
 
 <div id="content">
     <form action="#" method="post" th:action="@{/login}" th:object="${user}">
-        <a th:errors="*{username}" class="error">Username error</a>
-        <a th:if="${wrongCredentials}">Wrong credentials</a>
+        <a th:errors="*{email}" class="error">Username error</a>
+        <div class="alert" th:if="${errorMessage}" th:text="${errorMessage}"></div>
         <label>
-            <input type="text" placeholder="username" name="username">
+            <input type="text" placeholder="email" name="email">
         </label>
         <a th:errors="*{password}" class="error">Password error</a>
         <label>

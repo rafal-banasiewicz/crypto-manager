@@ -1,7 +1,6 @@
 package pl.rb.manager.utils;
 
 import org.springframework.ui.Model;
-import pl.rb.manager.session.SessionObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,8 +15,7 @@ public class CommonHelper {
         return dates;
     }
 
-    public static void loadCommonZondaAttributes(Model model, SessionObject sessionObject) {
-        model.addAttribute("logged", sessionObject.isLogged());
+    public static void loadCommonZondaAttributes(Model model) {
         model.addAttribute("spent", null);
         model.addAttribute("dates", getStringDates());
     }

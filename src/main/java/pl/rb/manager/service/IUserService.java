@@ -1,13 +1,9 @@
 package pl.rb.manager.service;
 
-import pl.rb.manager.model.dto.UserDto;
+import pl.rb.manager.model.User;
 
 public interface IUserService {
-    void auth(UserDto userDto);
+    void addWithDefaultRole(User user);
 
-    void register(UserDto userDto);
-
-    boolean exists(String username);
-
-    void logout();
+    boolean exists(String email);
 }

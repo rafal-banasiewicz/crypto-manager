@@ -1,35 +1,24 @@
 package pl.rb.manager.model;
 
-import pl.rb.manager.model.dto.UserDto;
+import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
+import java.util.HashSet;
+import java.util.Set;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
-
-@Entity(name = "tuser")
+@Entity
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @NotNull
-    @Size(min = 2, max = 50, message = "Username '${validatedValue}' is invalid. Username must be between {min} and {max} characters long")
-    private String username;
-    @NotNull
-    @Size(min = 2, max = 50, message = "Password '${validatedValue}' is invalid. Password must be between {min} and {max} characters long")
+    private String firstName;
+    private String lastName;
+    @NotBlank(message = "Email cannot be empty")
+    private String email;
+    @NotBlank(message = "Password cannot be empty")
     private String password;
-
-    public User(Long id, String username, String password) {
-        this.id = id;
-        this.username = username;
-        this.password = password;
-    }
-
-    public User() {
-    }
+    @ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
+    private Set<UserRole> roles = new HashSet<>();
 
     public Long getId() {
         return id;
@@ -39,12 +28,28 @@ public class User {
         this.id = id;
     }
 
-    public String getUsername() {
-        return username;
+    public String getFirstName() {
+        return firstName;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getPassword() {
@@ -55,19 +60,21 @@ public class User {
         this.password = password;
     }
 
-    @Override
-    public String toString() {
-        return "User{" +
-                "id=" + id +
-                ", username='" + username + '\'' +
-                ", password='" + password + '\'' +
-                '}';
+    public Set<UserRole> getRoles() {
+        return roles;
     }
 
-    public static User toUser(UserDto userDto) {
-        User user = new User();
-        user.setUsername(userDto.getUsername());
-        user.setPassword(userDto.getPassword());
-        return user;
+    public void setRoles(Set<UserRole> roles) {
+        this.roles = roles;
+    }
+
+    @Override
+    public String toString() {
+        return "User [id=" + id
+                + ", firstName=" + firstName
+                + ", lastName=" + lastName
+                + ", email=" + email
+                + ", password=" + password
+                + ", roles=" + roles + "]";
     }
 }
