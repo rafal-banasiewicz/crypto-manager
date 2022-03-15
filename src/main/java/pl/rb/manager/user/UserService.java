@@ -1,17 +1,12 @@
-package pl.rb.manager.service.impl;
+package pl.rb.manager.user;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import pl.rb.manager.model.User;
-import pl.rb.manager.model.UserRole;
-import pl.rb.manager.repository.UserRepository;
-import pl.rb.manager.repository.UserRoleRepository;
-import pl.rb.manager.service.IUserService;
 
 import java.util.Optional;
 
 @Service
-public class UserService implements IUserService {
+class UserService implements IUserService {
 
     private static final String DEFAULT_ROLE = "USER";
     private final UserRepository userRepository;

@@ -1,4 +1,4 @@
-package pl.rb.manager.model;
+package pl.rb.manager.user;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -6,7 +6,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
 @Entity
-public class UserRole {
+class UserRole {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

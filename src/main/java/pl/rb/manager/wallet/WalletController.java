@@ -1,4 +1,4 @@
-package pl.rb.manager.controllers;
+package pl.rb.manager.wallet;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -9,12 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Controller
-public class CommonController {
+class WalletController {
 
     @GetMapping(value = "/index")
-    public String main(Model model, Principal principal) {
+    private String main(Model model, Principal principal) {
         if (principal != null) {
-            System.out.println(principal.getName());
             List<String> cryptos = new ArrayList<>();
             cryptos.add("X");
             cryptos.add("Y");
@@ -25,4 +24,5 @@ public class CommonController {
         return "index";
     }
 
+    //todo
 }

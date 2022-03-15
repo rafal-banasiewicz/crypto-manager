@@ -1,13 +1,10 @@
-package pl.rb.manager.service.impl;
+package pl.rb.manager.zonda;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import org.springframework.stereotype.Service;
-import pl.rb.manager.model.zonda.ZondaRequest;
-import pl.rb.manager.model.zonda.ZondaResponse;
-import pl.rb.manager.service.IZondaService;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -24,7 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public class ZondaService implements IZondaService {
+class ZondaService implements IZondaService {
 
     public static final String HMAC_SHA512 = "HmacSHA512";
     public static final String START = "start";

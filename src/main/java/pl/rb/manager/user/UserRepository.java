@@ -1,10 +1,9 @@
-package pl.rb.manager.repository;
+package pl.rb.manager.user;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import pl.rb.manager.model.User;
 
 import java.util.Optional;
 
-public interface UserRepository extends JpaRepository<User, Long> {
+interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 }

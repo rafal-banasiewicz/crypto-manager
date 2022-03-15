@@ -1,4 +1,4 @@
-package pl.rb.manager.model;
+package pl.rb.manager.user;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-public class User {
+class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

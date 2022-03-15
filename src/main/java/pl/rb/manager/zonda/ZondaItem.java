@@ -1,6 +1,6 @@
-package pl.rb.manager.model.zonda;
+package pl.rb.manager.zonda;
 
-public class ZondaItem {
+class ZondaItem {
 
     String id;
     String market;

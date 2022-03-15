@@ -1,13 +1,13 @@
-package pl.rb.manager.utils;
+package pl.rb.manager.zonda;
 
 import org.springframework.ui.Model;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CommonHelper {
+class ZondaHelper {
 
-    public static List<String> getStringDates() {
+    private static List<String> getStringDates() {
         List<String> dates = new ArrayList<>();
         for (int i = 2016; i < 2031; i++) {
             dates.add(String.valueOf(i));
@@ -15,7 +15,7 @@ public class CommonHelper {
         return dates;
     }
 
-    public static void loadCommonZondaAttributes(Model model) {
+    static void loadCommonZondaAttributes(Model model) {
         model.addAttribute("spent", null);
         model.addAttribute("dates", getStringDates());
     }
