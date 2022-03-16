@@ -1,13 +1,13 @@
 package pl.rb.manager.zonda.helper;
 
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
-@Service
+@Component
 class ZondaHmacGenerator implements IZondaHmacGenerator {
 
     @Override

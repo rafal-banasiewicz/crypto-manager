@@ -1,10 +1,10 @@
 package pl.rb.manager.zonda.helper;
 
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 
-@Service
+@Component
 class ZondaDateCalculator implements IZondaDateCalculator {
 
     @Override
