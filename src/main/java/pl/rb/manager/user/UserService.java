@@ -2,6 +2,8 @@ package pl.rb.manager.user;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import pl.rb.manager.user.model.User;
+import pl.rb.manager.user.model.UserRole;
 
 import java.util.Optional;
 

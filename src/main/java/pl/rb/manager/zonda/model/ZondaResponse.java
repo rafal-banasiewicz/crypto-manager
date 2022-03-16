@@ -1,8 +1,8 @@
-package pl.rb.manager.zonda;
+package pl.rb.manager.zonda.model;
 
 import java.util.List;
 
-class ZondaResponse {
+public class ZondaResponse {
 
     private String status;
     private String totalRows;

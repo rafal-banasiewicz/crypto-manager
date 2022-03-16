@@ -1,8 +1,8 @@
-package pl.rb.manager.zonda;
+package pl.rb.manager.zonda.model;
 
 import javax.validation.constraints.NotBlank;
 
-class ZondaRequest {
+public class ZondaRequest {
 
     String fiat;
     String fromTime;
