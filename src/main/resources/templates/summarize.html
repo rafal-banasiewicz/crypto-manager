@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <link rel="stylesheet" href="/main.css">
+    <link rel="stylesheet" href="/files/main.css">
 </head>
 <body>
 
@@ -53,10 +53,12 @@
             <input type="submit" value="Submit">
         </label>
     </form>
-    <div th:if="${spent != null} and ${userAction.equals('Buy')}" th:text="'Bought crypto for: ' + ${spent} + ' ' + ${fiat}" id="buy"></div>
-    <div th:if="${spent != null} and ${userAction.equals('Sell')}" th:text="'Sold crypto for: ' + ${spent} + ' ' + ${fiat}" id="sell"></div>
-
+    <div th:if="${spent != null} and ${userAction.equals('Buy')}"
+         th:text="'Bought crypto for: ' + ${spent} + ' ' + ${fiat}" id="buy"></div>
+    <div th:if="${spent != null} and ${userAction.equals('Sell')}"
+         th:text="'Sold crypto for: ' + ${spent} + ' ' + ${fiat}" id="sell"></div>
+    <a href="AllSpendings.pdf" download><button type="button">Download</button></a>
 </div>
-
+<iframe src="files/MoneySpent.pdf" width="100%" height="600px"></iframe>
 </body>
 </html>

@@ -1,5 +1,6 @@
 package pl.rb.manager.zonda;
 
+import com.itextpdf.text.DocumentException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -30,7 +31,7 @@ class ZondaController {
     }
 
     @PostMapping(value = "/summarize")
-    private String summarize(Model model, @Valid @ModelAttribute("zonda") ZondaRequest zondaRequest, BindingResult bindingResult) throws NoSuchAlgorithmException, IOException, InvalidKeyException {
+    private String summarize(Model model, @Valid @ModelAttribute("zonda") ZondaRequest zondaRequest, BindingResult bindingResult) throws NoSuchAlgorithmException, IOException, InvalidKeyException, DocumentException {
         this.zondaFacade.loadCommonZondaAttributes(model);
         if (bindingResult.hasErrors()) {
             return "summarize";

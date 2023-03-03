@@ -2,13 +2,25 @@ package pl.rb.manager.zonda;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import org.springframework.stereotype.Service;
 import pl.rb.manager.zonda.helper.ZondaHelperFacade;
+import pl.rb.manager.zonda.model.ZondaItem;
+import pl.rb.manager.zonda.model.ZondaPdfData;
 import pl.rb.manager.zonda.model.ZondaRequest;
 import pl.rb.manager.zonda.model.ZondaResponse;
 
+import javax.swing.filechooser.FileSystemView;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -16,10 +28,14 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @Service
 class ZondaService implements IZondaService {
@@ -34,7 +50,7 @@ class ZondaService implements IZondaService {
     }
 
     @Override
-    public Double getSpendings(ZondaRequest zondaRequest) throws NoSuchAlgorithmException, InvalidKeyException, IOException {
+    public BigDecimal getSpendings(ZondaRequest zondaRequest) throws NoSuchAlgorithmException, InvalidKeyException, IOException, DocumentException {
         String nextPageCursor = START;
         String PUBLIC_KEY = zondaRequest.getPublicKey();
         long UNIX_TIME = Instant.now().getEpochSecond();
@@ -53,7 +69,52 @@ class ZondaService implements IZondaService {
             zondaResponses.add(response);
             nextPageCursor = response.getNextPageCursor();
         }
-        return getTotalSpent(zondaRequest, zondaResponses);
+        List<ZondaItem> itemsBasedOnFiat = getItemsBasedOnFiat(zondaRequest.getFiat(), zondaResponses);
+        List<ZondaPdfData> pdfData = itemsBasedOnFiat.stream().map(item -> new ZondaPdfData(new Date(Long.parseLong(item.getTime())), item.getUserAction(),
+                item.getMarket(), item.getAmount(), item.getRate(), new BigDecimal((item.getAmount())).multiply(new BigDecimal(item.getRate())).setScale(2, RoundingMode.HALF_UP))).toList();
+        BigDecimal totalSpent = getTotalSpent(itemsBasedOnFiat);
+        getDocument(pdfData, totalSpent);
+        return totalSpent;
+    }
+
+    private void getDocument(List<ZondaPdfData> pdfData, BigDecimal totalSpent) throws FileNotFoundException, DocumentException {
+        Document document = new Document();
+        PdfWriter.getInstance(document, new FileOutputStream(FileSystemView.getFileSystemView().getHomeDirectory() + "/MoneySpent.pdf"));
+        document.open();
+        PdfPTable table = new PdfPTable(6);
+        addTableHeader(table);
+        addRows(table, pdfData, String.valueOf(totalSpent));
+        document.add(table);
+        document.close();
+    }
+
+    private void addTableHeader(PdfPTable table) {
+        Stream.of("Date", "Action", "Market", "Amount", "Rate", "Spent")
+                .forEach(columnTitle -> {
+                    PdfPCell header = new PdfPCell();
+                    header.setBackgroundColor(BaseColor.LIGHT_GRAY);
+                    header.setBorderWidth(2);
+                    header.setPhrase(new Phrase(columnTitle));
+                    table.addCell(header);
+                });
+    }
+
+    private void addRows(PdfPTable table, List<ZondaPdfData> pdfData, String totalSpent) {
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+        for (ZondaPdfData data : pdfData) {
+            table.addCell(df.format(data.date()));
+            table.addCell(data.userAction());
+            table.addCell(data.market());
+            table.addCell(data.amount());
+            table.addCell(data.rate());
+            table.addCell(String.valueOf(data.totalSpent()));
+        }
+        table.addCell("");
+        table.addCell("");
+        table.addCell("");
+        table.addCell("");
+        table.addCell("Total Spent:");
+        table.addCell(totalSpent);
     }
 
     private String getParams(ZondaRequest zondaRequest, String nextPageCursor) {
@@ -78,21 +139,13 @@ class ZondaService implements IZondaService {
         return objectMapper.readValue(response, ZondaResponse.class);
     }
 
-    private double getTotalSpent(ZondaRequest zondaRequest, List<ZondaResponse> zondaResponses) {
-        return round(zondaResponses.stream()
-                .flatMap(zondaResponse -> zondaResponse.getItems().stream()
-                        .filter(zondaItem -> zondaItem.getMarket().substring(zondaItem.getMarket().lastIndexOf("-") + 1).length() == 3
-                                && zondaItem.getMarket().substring(zondaItem.getMarket().lastIndexOf("-") + 1).contains(zondaRequest.getFiat())))
-                .map(zondaItem -> Double.parseDouble(zondaItem.getAmount()) * Double.parseDouble(zondaItem.getRate()))
-                .mapToDouble(Double::doubleValue).sum(), 2);
+    private BigDecimal getTotalSpent(List<ZondaItem> items) {
+        return items
+                .stream().map(zondaItem -> new BigDecimal((zondaItem.getAmount())).multiply(new BigDecimal(zondaItem.getRate())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
     }
 
-    private double round(double value, int places) {
-        if (places < 0) {
-            throw new IllegalArgumentException();
-        }
-        BigDecimal bd = BigDecimal.valueOf(value);
-        bd = bd.setScale(places, RoundingMode.HALF_UP);
-        return bd.doubleValue();
+    private List<ZondaItem> getItemsBasedOnFiat(String fiat, List<ZondaResponse> zondaResponses) {
+        return zondaResponses.stream().flatMap(zondaResponse -> zondaResponse.getItems().stream().filter(zondaItem -> zondaItem.getMarket().contains(fiat))).toList();
     }
 }

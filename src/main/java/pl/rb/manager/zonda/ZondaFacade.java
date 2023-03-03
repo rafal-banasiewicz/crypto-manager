@@ -1,10 +1,12 @@
 package pl.rb.manager.zonda;
 
+import com.itextpdf.text.DocumentException;
 import org.springframework.stereotype.Service;
 import org.springframework.ui.Model;
 import pl.rb.manager.zonda.model.ZondaRequest;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Calendar;
@@ -22,7 +24,7 @@ public class ZondaFacade {
         this.zondaService = zondaService;
     }
 
-    public Double getSpendings(ZondaRequest zondaRequest) throws NoSuchAlgorithmException, IOException, InvalidKeyException {
+    public BigDecimal getSpendings(ZondaRequest zondaRequest) throws NoSuchAlgorithmException, IOException, InvalidKeyException, DocumentException {
         return zondaService.getSpendings(zondaRequest);
     }
 
