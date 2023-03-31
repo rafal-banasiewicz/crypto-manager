@@ -1,6 +1,6 @@
 package pl.rb.manager.zonda.model;
 
-import java.util.Date;
+import pl.rb.manager.model.Currency;
 
-public record ZondaPdfData(Date date, String userAction, String market, String amount, String rate, java.math.BigDecimal totalSpent) {
+public record ZondaPdfData(String date, String market, String amount, String rate, Currency fiat, String fiatMultiplier, String spentAmount, String spentAmountInPln) {
 }

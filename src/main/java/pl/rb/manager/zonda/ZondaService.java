@@ -1,151 +1,152 @@
 package pl.rb.manager.zonda;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Phrase;
-import com.itextpdf.text.pdf.PdfPCell;
-import com.itextpdf.text.pdf.PdfPTable;
-import com.itextpdf.text.pdf.PdfWriter;
 import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
 import org.springframework.stereotype.Service;
+import pl.rb.manager.model.ExchangeRequest;
+import pl.rb.manager.nbp.NbpRate;
+import pl.rb.manager.nbp.NbpRequestBuilder;
+import pl.rb.manager.nbp.NbpResponse;
 import pl.rb.manager.zonda.helper.ZondaHelperFacade;
-import pl.rb.manager.zonda.model.ZondaItem;
-import pl.rb.manager.zonda.model.ZondaPdfData;
-import pl.rb.manager.zonda.model.ZondaRequest;
-import pl.rb.manager.zonda.model.ZondaResponse;
+import pl.rb.manager.zonda.model.*;
+import pl.rb.manager.model.Currency;
 
-import javax.swing.filechooser.FileSystemView;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Stream;
+import java.util.*;
 
 @Service
-class ZondaService implements IZondaService {
+record ZondaService(ZondaHelperFacade zondaHelperFacade, ZondaPdfProvider zondaPdfProvider, ZondaRequestBuilder zondaRequestBuilder, NbpRequestBuilder nbpRequestBuilder) {
 
-    private static final String HMAC_SHA512 = "HmacSHA512";
-    private static final String START = "start";
-
-    private final ZondaHelperFacade zondaHelperFacade;
-
-    ZondaService(ZondaHelperFacade zondaHelperFacade) {
-        this.zondaHelperFacade = zondaHelperFacade;
-    }
-
-    @Override
-    public BigDecimal getSpendings(ZondaRequest zondaRequest) throws NoSuchAlgorithmException, InvalidKeyException, IOException, DocumentException {
-        String nextPageCursor = START;
-        String PUBLIC_KEY = zondaRequest.getPublicKey();
-        long UNIX_TIME = Instant.now().getEpochSecond();
-        UUID OPERATION_ID = UUID.randomUUID();
-        String API_HASH = zondaHelperFacade.getHmac(HMAC_SHA512, PUBLIC_KEY + UNIX_TIME, zondaRequest.getPrivateKey());
+    String getSpendings(ExchangeRequest exchangeRequest) throws NoSuchAlgorithmException, InvalidKeyException, IOException, DocumentException, ParseException {
+        var zondaRequestData = getZondaRequestData(exchangeRequest);
         List<ZondaResponse> zondaResponses = new ArrayList<>();
-        OkHttpClient client = new OkHttpClient();
+        var client = new OkHttpClient();
         while (true) {
-            String params = URLEncoder.encode(getParams(zondaRequest, nextPageCursor), StandardCharsets.UTF_8);
-            String URL = "https://api.zonda.exchange/rest/trading/history/transactions?query=" + params;
-            Request request = buildRequest(PUBLIC_KEY, UNIX_TIME, OPERATION_ID, API_HASH, URL);
-            ZondaResponse response = getZondaResponse(client.newCall(request).execute().body().string());
-            if (response.getNextPageCursor().equals(nextPageCursor)) {
+            var request = zondaRequestBuilder.buildRequest(zondaRequestData);
+            var response = getZondaResponse(client.newCall(request).execute().body().bytes());
+            if (response.getNextPageCursor().equals(zondaRequestData.getNextPageCursor())) {
                 break;
             }
             zondaResponses.add(response);
-            nextPageCursor = response.getNextPageCursor();
+            zondaRequestData.setNextPageCursor(response.getNextPageCursor());
         }
-        List<ZondaItem> itemsBasedOnFiat = getItemsBasedOnFiat(zondaRequest.getFiat(), zondaResponses);
-        List<ZondaPdfData> pdfData = itemsBasedOnFiat.stream().map(item -> new ZondaPdfData(new Date(Long.parseLong(item.getTime())), item.getUserAction(),
-                item.getMarket(), item.getAmount(), item.getRate(), new BigDecimal((item.getAmount())).multiply(new BigDecimal(item.getRate())).setScale(2, RoundingMode.HALF_UP))).toList();
-        BigDecimal totalSpent = getTotalSpent(itemsBasedOnFiat);
-        getDocument(pdfData, totalSpent);
+        var itemsBasedOnFiat = getItemsBasedOnFiat(exchangeRequest.getFiat(), zondaResponses);
+        if(isNotPLNCurrency(exchangeRequest)) {
+            setFiatMultiplierForNonPLNCurrencies(exchangeRequest, client, itemsBasedOnFiat);
+        }
+        var totalSpent = getTotalSpentAmount(itemsBasedOnFiat, exchangeRequest.getFiat());
+        zondaPdfProvider.createDocument(createPdfData(itemsBasedOnFiat, exchangeRequest.getFiat()), totalSpent);
         return totalSpent;
     }
 
-    private void getDocument(List<ZondaPdfData> pdfData, BigDecimal totalSpent) throws FileNotFoundException, DocumentException {
-        Document document = new Document();
-        PdfWriter.getInstance(document, new FileOutputStream(FileSystemView.getFileSystemView().getHomeDirectory() + "/MoneySpent.pdf"));
-        document.open();
-        PdfPTable table = new PdfPTable(6);
-        addTableHeader(table);
-        addRows(table, pdfData, String.valueOf(totalSpent));
-        document.add(table);
-        document.close();
+    private boolean isNotPLNCurrency(ExchangeRequest exchangeRequest) {
+        return !exchangeRequest.getFiat().equals(Currency.PLN);
     }
 
-    private void addTableHeader(PdfPTable table) {
-        Stream.of("Date", "Action", "Market", "Amount", "Rate", "Spent")
-                .forEach(columnTitle -> {
-                    PdfPCell header = new PdfPCell();
-                    header.setBackgroundColor(BaseColor.LIGHT_GRAY);
-                    header.setBorderWidth(2);
-                    header.setPhrase(new Phrase(columnTitle));
-                    table.addCell(header);
-                });
-    }
-
-    private void addRows(PdfPTable table, List<ZondaPdfData> pdfData, String totalSpent) {
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-        for (ZondaPdfData data : pdfData) {
-            table.addCell(df.format(data.date()));
-            table.addCell(data.userAction());
-            table.addCell(data.market());
-            table.addCell(data.amount());
-            table.addCell(data.rate());
-            table.addCell(String.valueOf(data.totalSpent()));
+    private void setFiatMultiplierForNonPLNCurrencies(ExchangeRequest exchangeRequest, OkHttpClient client, List<ZondaItem> itemsBasedOnFiat) throws IOException, ParseException {
+        List<NbpRate> nbpRates = new ArrayList<>();
+        for(int i = 0; i < Integer.parseInt(exchangeRequest.getToTime()) - Integer.parseInt(exchangeRequest.getFromTime()) + 1; i++) {
+            var request = nbpRequestBuilder.buildRequest(exchangeRequest.getFiat(), String.valueOf(Integer.parseInt(exchangeRequest.getFromTime()) + i));
+            var response = getNbpResponse(client.newCall(request).execute().body().bytes());
+            nbpRates.addAll(response.getRates());
         }
-        table.addCell("");
-        table.addCell("");
-        table.addCell("");
-        table.addCell("");
-        table.addCell("Total Spent:");
-        table.addCell(totalSpent);
+        for (var item : itemsBasedOnFiat) {
+            var time = item.getTime();
+            while(true) {
+                String tempTime = time;
+                Optional<NbpRate> nbpRate = nbpRates.stream().filter(rate -> rate.getEffectiveDate().equals(tempTime)).findAny();
+                if (nbpRate.isPresent()) {
+                    item.setFiatMultiplier(nbpRate.get().getMid());
+                    break;
+                }
+                time = previousDay(tempTime);
+            }
+        }
     }
 
-    private String getParams(ZondaRequest zondaRequest, String nextPageCursor) {
-        return "{\"fromTime\":\"" + zondaHelperFacade.calculateFrom(zondaRequest.getFromTime()) + "\", \"toTime\":\"" + zondaHelperFacade.calculateTo(zondaRequest.getToTime()) + "\", \"userAction\":\"" + zondaRequest.getUserAction() + "\", \"nextPageCursor\":\"" + nextPageCursor + "\"}";
+    private String previousDay(String time) throws ParseException {
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+        Date date = df.parse(time);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.add(Calendar.DAY_OF_YEAR, -1);
+        return df.format(calendar.getTime());
     }
 
-    private Request buildRequest(String PUBLIC_KEY, long UNIX_TIME, UUID OPERATION_ID, String API_HASH, String URL) {
-        return new Request.Builder()
-                .url(URL)
-                .get()
-                .addHeader("Accept", "application/json")
-                .addHeader("Content-Type", "application/json")
-                .addHeader("API-Key", PUBLIC_KEY)
-                .addHeader("API-Hash", API_HASH)
-                .addHeader("operation-id", String.valueOf(OPERATION_ID))
-                .addHeader("Request-Timestamp", String.valueOf(UNIX_TIME))
-                .build();
+    private ZondaRequestData getZondaRequestData(ExchangeRequest exchangeRequest) throws NoSuchAlgorithmException, InvalidKeyException {
+        var zondaRequestData = ZondaRequestData.builder()
+                .nextPageCursor("start")
+                .publicKey(exchangeRequest.getPublicKey())
+                .unixTime(Instant.now().getEpochSecond())
+                .operationId(UUID.randomUUID())
+                .exchangeRequest(exchangeRequest).build();
+        zondaRequestData.setApiHash(zondaHelperFacade.getHmac("HmacSHA512", zondaRequestData));
+        return zondaRequestData;
     }
 
-    private ZondaResponse getZondaResponse(String response) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readValue(response, ZondaResponse.class);
+    private ZondaResponse getZondaResponse(byte[] response) throws IOException {
+        return new ObjectMapper().reader().readValue(response, ZondaResponse.class);
     }
 
-    private BigDecimal getTotalSpent(List<ZondaItem> items) {
-        return items
-                .stream().map(zondaItem -> new BigDecimal((zondaItem.getAmount())).multiply(new BigDecimal(zondaItem.getRate())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
+    private NbpResponse getNbpResponse(byte[] response) throws IOException {
+        return new ObjectMapper().reader().readValue(response, NbpResponse.class);
     }
 
-    private List<ZondaItem> getItemsBasedOnFiat(String fiat, List<ZondaResponse> zondaResponses) {
-        return zondaResponses.stream().flatMap(zondaResponse -> zondaResponse.getItems().stream().filter(zondaItem -> zondaItem.getMarket().contains(fiat))).toList();
+    private List<ZondaPdfData> createPdfData(List<ZondaItem> itemsBasedOnFiat, Currency fiat) {
+        return itemsBasedOnFiat
+                .stream().map(item -> new ZondaPdfData(
+                        item.getTime(),
+                        item.getMarket(),
+                        item.getAmount(),
+                        item.getRate(),
+                        fiat,
+                        String.valueOf(item.getFiatMultiplier()),
+                        String.format("%s %s", calculateSpentValue(item).setScale(2, RoundingMode.HALF_UP), fiat),
+                        String.format("%s PLN", calculateSpentPLNValue(item).setScale(2, RoundingMode.HALF_UP))))
+                .toList();
+    }
+
+    private String getTotalSpentAmount(List<ZondaItem> items, Currency fiat) {
+        return String.format("%s %s", items
+                .stream()
+                .map(this::calculateSpentPLNValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP), fiat);
+    }
+
+    private BigDecimal calculateSpentValue(ZondaItem zondaItem) {
+        var amount = new BigDecimal((zondaItem.getAmount()));
+        var rate = new BigDecimal(zondaItem.getRate());
+        return amount.multiply(rate);
+    }
+
+    private BigDecimal calculateSpentPLNValue(ZondaItem zondaItem) {
+        var amount = new BigDecimal((zondaItem.getAmount()));
+        var rate = new BigDecimal(zondaItem.getRate());
+        var fiatMultiplier = zondaItem.getFiatMultiplier();
+        return amount.multiply(rate).multiply(fiatMultiplier);
+    }
+
+    private List<ZondaItem> getItemsBasedOnFiat(Currency fiat, List<ZondaResponse> zondaResponses) {
+        var zondaItems = zondaResponses
+                .stream()
+                .flatMap(zondaResponse -> zondaResponse.getItems().stream())
+                .filter(zondaItem -> zondaItem.getMarket().contains(String.valueOf(fiat)))
+                .sorted(Comparator.comparing(ZondaItem::getTime))
+                .toList();
+        var df = new SimpleDateFormat("yyyy-MM-dd");
+        zondaItems.forEach(item -> {
+            item.setTime(df.format(new Date(Long.parseLong(item.getTime()))));
+            item.setFiatMultiplier(new BigDecimal(1));
+        });
+        return zondaItems;
     }
 }

@@ -3,29 +3,23 @@ package pl.rb.manager.zonda;
 import com.itextpdf.text.DocumentException;
 import org.springframework.stereotype.Service;
 import org.springframework.ui.Model;
-import pl.rb.manager.zonda.model.ZondaRequest;
+import pl.rb.manager.model.ExchangeRequest;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.text.ParseException;
 import java.util.Calendar;
 import java.util.List;
 import java.util.stream.IntStream;
 
 @Service
-public class ZondaFacade {
+public record ZondaFacade(ZondaService zondaService) {
 
     private static final int BITBAY_ZONDA_CREATE_YEAR = 2014;
 
-    private final IZondaService zondaService;
-
-    public ZondaFacade(IZondaService zondaService) {
-        this.zondaService = zondaService;
-    }
-
-    public BigDecimal getSpendings(ZondaRequest zondaRequest) throws NoSuchAlgorithmException, IOException, InvalidKeyException, DocumentException {
-        return zondaService.getSpendings(zondaRequest);
+    public String getSpendings(ExchangeRequest exchangeRequest) throws NoSuchAlgorithmException, IOException, InvalidKeyException, DocumentException, ParseException {
+        return zondaService.getSpendings(exchangeRequest);
     }
 
     public void loadCommonZondaAttributes(Model model) {
@@ -34,7 +28,7 @@ public class ZondaFacade {
     }
 
     private List<Integer> getYears() {
-        int currentYear = Calendar.getInstance().get(Calendar.YEAR);
+        var currentYear = Calendar.getInstance().get(Calendar.YEAR);
         return IntStream.rangeClosed(BITBAY_ZONDA_CREATE_YEAR, currentYear).boxed().toList();
     }
 
