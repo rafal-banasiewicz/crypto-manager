@@ -48,7 +48,7 @@ record ZondaService(ZondaHelperFacade zondaHelperFacade, ZondaPdfProvider zondaP
     }
 
     private boolean isNotPLNCurrency(ExchangeRequest exchangeRequest) {
-        return !exchangeRequest.getFiat().equals(Currency.PLN);
+        return !exchangeRequest.getFiat().equals(Currency.EUR);
     }
 
     private void setFiatMultiplierForNonPLNCurrencies(ExchangeRequest exchangeRequest, OkHttpClient client, List<ZondaItem> itemsBasedOnFiat) throws IOException, ParseException {
@@ -61,13 +61,13 @@ record ZondaService(ZondaHelperFacade zondaHelperFacade, ZondaPdfProvider zondaP
         for (var item : itemsBasedOnFiat) {
             var time = item.getTime();
             while(true) {
-                String tempTime = time;
+                String tempTime = previousDay(time);
                 Optional<NbpRate> nbpRate = nbpRates.stream().filter(rate -> rate.getEffectiveDate().equals(tempTime)).findAny();
                 if (nbpRate.isPresent()) {
                     item.setFiatMultiplier(nbpRate.get().getMid());
                     break;
                 }
-                time = previousDay(tempTime);
+                time = tempTime;
             }
         }
     }
