@@ -1,4 +1,4 @@
-package pl.rb.manager.zonda.model;
+package pl.rb.manager.exchange.zonda.model;
 
 import pl.rb.manager.model.Currency;
 

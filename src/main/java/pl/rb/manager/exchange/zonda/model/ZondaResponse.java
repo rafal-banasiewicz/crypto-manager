@@ -1,4 +1,4 @@
-package pl.rb.manager.zonda.model;
+package pl.rb.manager.exchange.zonda.model;
 
 import lombok.*;
 
@@ -12,7 +12,7 @@ public class ZondaResponse {
 
     private String status;
     private String totalRows;
-    private List<ZondaItem> items;
+    private List<ZondaOrder> items;
     private Object query;
     private String nextPageCursor;
 }

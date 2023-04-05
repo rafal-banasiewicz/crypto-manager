@@ -1,4 +1,4 @@
-package pl.rb.manager.zonda.model;
+package pl.rb.manager.exchange.zonda.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ZondaItem {
+public class ZondaOrder {
 
     String id;
     String market;

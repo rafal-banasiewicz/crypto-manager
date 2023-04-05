@@ -35,7 +35,8 @@ class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
                 .authorizeRequests()
                 .antMatchers("/h2-console/**").permitAll()
-                .antMatchers("/summarize").permitAll()
+                .antMatchers("/zonda").permitAll()
+                .antMatchers("/binance").permitAll()
                 .antMatchers("/register").permitAll()
                 .antMatchers("/files/main.css").permitAll()
                 .antMatchers("/files/logo.png").permitAll()

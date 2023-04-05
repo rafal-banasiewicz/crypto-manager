@@ -12,7 +12,8 @@
 
 <div id="menu" th:fragment="menu">
   <a href="#" th:href="@{/index}">Main</a>
-  <a href="#" th:href="@{/summarize}">Summarize</a>
+  <a href="#" th:href="@{/zonda}">Zonda</a>
+  <a href="#" th:href="@{/binance}">Binance</a>
   <a sec:authorize="!isAuthenticated()" href="#" th:href="@{/login}">Login</a>
   <a sec:authorize="isAuthenticated()" href="#" th:href="@{/logout}">Logout</a>
   <a sec:authorize="!isAuthenticated()" href="#" th:href="@{/register}">Register</a>

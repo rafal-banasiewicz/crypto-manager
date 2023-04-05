@@ -16,7 +16,7 @@ public class ExchangeRequest {
     Currency fiat;
     String fromTime;
     String toTime;
-    String userAction;
+    UserAction userAction;
     @NotBlank(message = " cannot be empty!")
     String publicKey;
     @NotBlank(message = " cannot be empty!")

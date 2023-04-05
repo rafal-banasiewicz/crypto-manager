@@ -1,8 +1,8 @@
-package pl.rb.manager.zonda.model;
+package pl.rb.manager.exchange.zonda.model;
 
 import lombok.Builder;
 import lombok.Data;
-import pl.rb.manager.model.ExchangeRequest;
+import pl.rb.manager.model.UserAction;
 
 import java.util.UUID;
 
@@ -15,5 +15,7 @@ public class ZondaRequestData {
     long unixTime;
     UUID operationId;
     String apiHash;
-    ExchangeRequest exchangeRequest;
+    String fromTime;
+    String toTime;
+    UserAction userAction;
 }
