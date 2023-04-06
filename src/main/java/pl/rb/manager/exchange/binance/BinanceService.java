@@ -1,14 +1,16 @@
 package pl.rb.manager.exchange.binance;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.DocumentException;
-import com.squareup.okhttp.OkHttpClient;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import pl.rb.manager.exchange.utils.NbpHelper;
+import org.springframework.web.client.RestTemplate;
 import pl.rb.manager.exchange.binance.model.BinanceOrder;
 import pl.rb.manager.exchange.binance.model.BinancePdfData;
 import pl.rb.manager.exchange.binance.model.BinanceResponse;
 import pl.rb.manager.exchange.binance.model.BinanceServerTime;
+import pl.rb.manager.exchange.utils.NbpHelper;
 import pl.rb.manager.model.Currency;
 import pl.rb.manager.model.ExchangeRequest;
 import pl.rb.manager.model.UserAction;
@@ -28,33 +30,24 @@ import static pl.rb.manager.exchange.utils.DatesHelper.*;
 @Service
 class BinanceService {
 
-    private final OkHttpClient client;
-    private final BinanceRequestBuilder binanceRequestBuilder;
+    private final BinanceHttpRequestBuilder binanceHttpRequestBuilder;
     private final BinancePdfProvider binancePdfProvider;
     private final NbpHelper nbpHelper;
-    private final ObjectMapper mapper;
+    private final RestTemplate restTemplate;
 
-    BinanceService(OkHttpClient client, BinanceRequestBuilder binanceRequestBuilder, BinancePdfProvider binancePdfProvider, NbpHelper nbpHelper, ObjectMapper mapper) {
-        this.client = client;
-        this.binanceRequestBuilder = binanceRequestBuilder;
+    BinanceService(BinanceHttpRequestBuilder binanceHttpRequestBuilder, BinancePdfProvider binancePdfProvider, NbpHelper nbpHelper,
+                   @Qualifier("binanceRestTemplate") RestTemplate restTemplate) {
+        this.binanceHttpRequestBuilder = binanceHttpRequestBuilder;
         this.binancePdfProvider = binancePdfProvider;
         this.nbpHelper = nbpHelper;
-        this.mapper = mapper;
+        this.restTemplate = restTemplate;
     }
 
     String getSpendings(ExchangeRequest exchangeRequest) throws IOException, NoSuchAlgorithmException, InvalidKeyException, DocumentException {
-
-        var buildServerTimeRequest = binanceRequestBuilder.buildServerTimeRequest();
-        var binanceServerTime = mapper.readValue(client.newCall(buildServerTimeRequest).execute().body().string(), BinanceServerTime.class);
-        var paymentsRequest = binanceRequestBuilder.buildPaymentsRequest(
-                UserAction.getBinanceTransactionType(exchangeRequest.getUserAction()),
-                getBeginYearTimestamp(exchangeRequest.getFromTime()),
-                getEndYearTimestamp(exchangeRequest.getToTime()),
-                binanceServerTime.getServerTime(),
-                exchangeRequest.getPublicKey(),
-                exchangeRequest.getPrivateKey()
-        );
-        var binanceResponse = mapper.readValue(client.newCall(paymentsRequest).execute().body().string(), BinanceResponse.class);
+        var binanceServerTime = restTemplate.getForEntity(binanceHttpRequestBuilder.getServerTimeUrl(), BinanceServerTime.class);
+        var entity = binanceHttpRequestBuilder.createHttpEntityWithHeader(exchangeRequest.getPublicKey());
+        var fiatPaymentsUrl = getFiatPaymentsUrl(exchangeRequest, binanceServerTime);
+        var binanceResponse = restTemplate.exchange(fiatPaymentsUrl, HttpMethod.GET, entity, BinanceResponse.class).getBody();
         binanceResponse.getData().forEach(order -> order.setTransactionTime(formatDate(order.getUpdateTime())));
         var ordersByCurrency = getOrdersByCurrency(binanceResponse);
         setFiatMultiplierForEachCurrency(exchangeRequest, ordersByCurrency);
@@ -67,6 +60,15 @@ class BinanceService {
         var feeSpent = getTotalFeeAmount(accountOrders);
         binancePdfProvider.createDocument(createPdfData(accountOrders), feeSpent, totalSpent);
         return totalSpent;
+    }
+
+    private String getFiatPaymentsUrl(ExchangeRequest exchangeRequest, ResponseEntity<BinanceServerTime> binanceServerTime) throws NoSuchAlgorithmException, InvalidKeyException {
+        return binanceHttpRequestBuilder.getFiatPaymentsUrl(
+                UserAction.getBinanceTransactionType(exchangeRequest.getUserAction()),
+                getBeginYearTimestamp(exchangeRequest.getFromTime()),
+                getEndYearTimestamp(exchangeRequest.getToTime()),
+                binanceServerTime.getBody().getServerTime(),
+                exchangeRequest.getPrivateKey());
     }
 
     private Map<Currency, List<BinanceOrder>> getOrdersByCurrency(BinanceResponse binanceResponse) {

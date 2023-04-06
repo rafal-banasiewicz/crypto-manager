@@ -32,18 +32,4 @@ public final class HmacProvider {
         return new String(hexDigits);
     }
 
-    public static void main(String[] args) throws NoSuchAlgorithmException, InvalidKeyException {
-        //GET
-        //https://api.binance.com/api/v3/time
-
-        //GET
-        //https://api.binance.com/sapi/v1/fiat/payments?
-        // transactionType=0&
-        // timestamp=1680381620395&
-        // signature=c9d8312e3783650b45ccc17598426665ee837aa2d1d735426ec69c440fc9fd84
-
-        String hmac = generateHmac("HmacSHA256", "transactionType=0&beginTime=1609462800000&recvWindow=60000&timestamp=1680436320737", "ijrGC5Fd7bmc1AwZ9Nhd012IDKMgSEe916SBIOJHRFqoCjJIomg5UYliz3mqRKOt"); //secretKey
-        System.out.println("https://api.binance.com/sapi/v1/fiat/payments?transactionType=0&beginTime=1609462800000&recvWindow=60000&timestamp=1680436320737&signature=" + hmac);
-    }
-
 }

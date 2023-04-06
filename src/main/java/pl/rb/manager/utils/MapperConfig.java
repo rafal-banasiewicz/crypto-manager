@@ -1,4 +1,4 @@
-package pl.rb.manager.exchange.utils;
+package pl.rb.manager.utils;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;

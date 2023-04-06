@@ -1,39 +1,38 @@
 package pl.rb.manager.exchange.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.squareup.okhttp.OkHttpClient;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 import pl.rb.manager.model.Currency;
 import pl.rb.manager.nbp.NbpRate;
-import pl.rb.manager.nbp.NbpRequestBuilder;
 import pl.rb.manager.nbp.NbpResponse;
 
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class NbpHelper {
 
-    private final OkHttpClient client;
-    private final NbpRequestBuilder nbpRequestBuilder;
-    private final ObjectMapper mapper;
-
-    NbpHelper(OkHttpClient client, NbpRequestBuilder nbpRequestBuilder, ObjectMapper mapper) {
-        this.client = client;
-        this.nbpRequestBuilder = nbpRequestBuilder;
-        this.mapper = mapper;
-    }
-
-    public List<NbpRate> getNbpRatesFromCorrespondingYears(String fromTime, String toTime, Currency currency) throws IOException {
+    public List<NbpRate> getNbpRatesFromCorrespondingYears(String fromTime, String toTime, Currency currency) {
         List<NbpRate> nbpRates = new ArrayList<>();
         int yearsCount = Integer.parseInt(toTime) - Integer.parseInt(fromTime) + 1;
-        for(int i = 0; i < yearsCount; i++) {
+        var restTemplate = new RestTemplate();
+        for (int i = 0; i < yearsCount; i++) {
             String requestYear = String.valueOf(Integer.parseInt(fromTime) + i);
-            var request = nbpRequestBuilder.buildRequest(currency, requestYear);
-            var response = mapper.readValue(client.newCall(request).execute().body().string(), NbpResponse.class);
-            nbpRates.addAll(response.getRates());
+            var response = restTemplate.getForEntity(getExchangeRatesUrl(currency, requestYear), NbpResponse.class);
+            nbpRates.addAll(response.getBody().getRates());
         }
         return nbpRates;
+    }
+
+    private String getExchangeRatesUrl(Currency currency, String year) {
+        Map<String, String> urlParams = new HashMap<>();
+        urlParams.put("table", "A");
+        urlParams.put("fiat", currency.toString());
+        urlParams.put("startDate", year + "-01-01");
+        urlParams.put("endDate", year + "-12-31");
+        return UriComponentsBuilder.fromUriString("http://api.nbp.pl/api/exchangerates/rates/{table}/{fiat}/{startDate}/{endDate}").buildAndExpand(urlParams).toUriString();
     }
 }
