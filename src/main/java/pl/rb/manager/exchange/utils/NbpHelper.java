@@ -15,10 +15,15 @@ import java.util.Map;
 @Component
 public class NbpHelper {
 
+    private final RestTemplate restTemplate;
+
+    public NbpHelper(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
     public List<NbpRate> getNbpRatesFromCorrespondingYears(String fromTime, String toTime, Currency currency) {
         List<NbpRate> nbpRates = new ArrayList<>();
         int yearsCount = Integer.parseInt(toTime) - Integer.parseInt(fromTime) + 1;
-        var restTemplate = new RestTemplate();
         for (int i = 0; i < yearsCount; i++) {
             String requestYear = String.valueOf(Integer.parseInt(fromTime) + i);
             var response = restTemplate.getForEntity(getExchangeRatesUrl(currency, requestYear), NbpResponse.class);

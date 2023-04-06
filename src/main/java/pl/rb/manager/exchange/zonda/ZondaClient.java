@@ -2,32 +2,44 @@ package pl.rb.manager.exchange.zonda;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import pl.rb.manager.exchange.zonda.model.ZondaQueryParams;
 import pl.rb.manager.exchange.zonda.model.ZondaRequestData;
+import pl.rb.manager.exchange.zonda.model.ZondaResponse;
 import pl.rb.manager.model.UserAction;
 
 @Component
-record ZondaHttpRequestBuilder(ZondaDateCalculator zondaDateCalculator, ObjectMapper mapper) {
+class ZondaClient {
 
-    @Bean(name = "zondaRestTemplate")
-    public RestTemplate getZondaRestTemplate() {
-        return new RestTemplate();
+    private final ZondaDateCalculator zondaDateCalculator;
+    private final ObjectMapper mapper;
+    private final RestTemplate restTemplate;
+
+    ZondaClient(ZondaDateCalculator zondaDateCalculator, ObjectMapper mapper) {
+        this.zondaDateCalculator = zondaDateCalculator;
+        this.mapper = mapper;
+        this.restTemplate = new RestTemplate();
     }
 
-    public String getTransactionHistoryUrl() {
+    public ZondaResponse getZondaResponse(ZondaRequestData zondaRequestData) throws JsonProcessingException {
+        var entity = createHttpEntityWithHeaders(zondaRequestData);
+        return restTemplate.exchange(getTransactionHistoryUrl(), HttpMethod.GET, entity,
+                ZondaResponse.class, createQueryParams(zondaRequestData)).getBody();
+    }
+
+    private String getTransactionHistoryUrl() {
         return UriComponentsBuilder.fromHttpUrl("https://api.zonda.exchange/rest/trading/history/transactions")
                 .queryParam("query", "{query}")
                 .encode()
                 .toUriString();
     }
 
-    public HttpEntity<String> createHttpEntityWithHeaders(ZondaRequestData zondaRequestData) {
+    private HttpEntity<String> createHttpEntityWithHeaders(ZondaRequestData zondaRequestData) {
         return new HttpEntity<>(getRequiredHttpHeaders(zondaRequestData));
     }
 
@@ -40,7 +52,7 @@ record ZondaHttpRequestBuilder(ZondaDateCalculator zondaDateCalculator, ObjectMa
         return headers;
     }
 
-    public String createQueryParams(ZondaRequestData zondaRequestData) throws JsonProcessingException {
+    private String createQueryParams(ZondaRequestData zondaRequestData) throws JsonProcessingException {
     return mapper.writeValueAsString(ZondaQueryParams.builder()
             .fromTime(zondaDateCalculator.calculateFrom(zondaRequestData.getFromTime()))
             .toTime(zondaDateCalculator.calculateTo(zondaRequestData.getToTime()))

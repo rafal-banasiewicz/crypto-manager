@@ -69,11 +69,11 @@ class BinancePdfProvider {
         table.addCell(createCommonCellStyle(totalSpent));
     }
 
-    private PdfPCell createCommonCellStyle(Object body) {
+    private PdfPCell createCommonCellStyle(String body) {
         var header = new PdfPCell();
         header.setVerticalAlignment(Element.ALIGN_CENTER);
         header.setHorizontalAlignment(Element.ALIGN_CENTER);
-        header.setPhrase(new Phrase(body.toString()));
+        header.setPhrase(new Phrase(body));
         return header;
     }
 }

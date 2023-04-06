@@ -1,54 +1,40 @@
 package pl.rb.manager.exchange.binance;
 
-import com.itextpdf.text.DocumentException;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.client.RestTemplate;
 import pl.rb.manager.exchange.binance.model.BinanceOrder;
 import pl.rb.manager.exchange.binance.model.BinancePdfData;
 import pl.rb.manager.exchange.binance.model.BinanceResponse;
-import pl.rb.manager.exchange.binance.model.BinanceServerTime;
 import pl.rb.manager.exchange.utils.NbpHelper;
 import pl.rb.manager.model.Currency;
 import pl.rb.manager.model.ExchangeRequest;
-import pl.rb.manager.model.UserAction;
 import pl.rb.manager.nbp.NbpRate;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static pl.rb.manager.exchange.utils.DatesHelper.*;
+import static pl.rb.manager.exchange.utils.DatesHelper.formatDate;
+import static pl.rb.manager.exchange.utils.DatesHelper.previousDayDate;
 
 @Service
+public
 class BinanceService {
 
-    private final BinanceHttpRequestBuilder binanceHttpRequestBuilder;
+    private final BinanceClient binanceClient;
     private final BinancePdfProvider binancePdfProvider;
     private final NbpHelper nbpHelper;
-    private final RestTemplate restTemplate;
 
-    BinanceService(BinanceHttpRequestBuilder binanceHttpRequestBuilder, BinancePdfProvider binancePdfProvider, NbpHelper nbpHelper,
-                   @Qualifier("binanceRestTemplate") RestTemplate restTemplate) {
-        this.binanceHttpRequestBuilder = binanceHttpRequestBuilder;
+    BinanceService(BinanceClient binanceClient, BinancePdfProvider binancePdfProvider, NbpHelper nbpHelper) {
+        this.binanceClient = binanceClient;
         this.binancePdfProvider = binancePdfProvider;
         this.nbpHelper = nbpHelper;
-        this.restTemplate = restTemplate;
     }
 
-    String getSpendings(ExchangeRequest exchangeRequest) throws IOException, NoSuchAlgorithmException, InvalidKeyException, DocumentException {
-        var binanceServerTime = restTemplate.getForEntity(binanceHttpRequestBuilder.getServerTimeUrl(), BinanceServerTime.class);
-        var entity = binanceHttpRequestBuilder.createHttpEntityWithHeader(exchangeRequest.getPublicKey());
-        var fiatPaymentsUrl = getFiatPaymentsUrl(exchangeRequest, binanceServerTime);
-        var binanceResponse = restTemplate.exchange(fiatPaymentsUrl, HttpMethod.GET, entity, BinanceResponse.class).getBody();
+    public String getSpendings(ExchangeRequest exchangeRequest) throws Exception {
+        var binanceResponse = binanceClient.getBinanceResponse(exchangeRequest, binanceClient.getBinanceServerTime());
         if (!CollectionUtils.isEmpty((binanceResponse.getData()))) {
             binanceResponse.getData().forEach(order -> order.setTransactionTime(formatDate(order.getUpdateTime())));
             var ordersByCurrency = getOrdersByCurrency(binanceResponse);
@@ -66,14 +52,6 @@ class BinanceService {
         return "0";
     }
 
-    private String getFiatPaymentsUrl(ExchangeRequest exchangeRequest, ResponseEntity<BinanceServerTime> binanceServerTime) throws NoSuchAlgorithmException, InvalidKeyException {
-        return binanceHttpRequestBuilder.getFiatPaymentsUrl(
-                UserAction.getBinanceTransactionType(exchangeRequest.getUserAction()),
-                getBeginYearTimestamp(exchangeRequest.getFromTime()),
-                getEndYearTimestamp(exchangeRequest.getToTime()),
-                binanceServerTime.getBody().getServerTime(),
-                exchangeRequest.getPrivateKey());
-    }
 
     private Map<Currency, List<BinanceOrder>> getOrdersByCurrency(BinanceResponse binanceResponse) {
         return binanceResponse.getData().stream().collect(Collectors.groupingBy(BinanceOrder::getFiatCurrency));
@@ -86,7 +64,7 @@ class BinanceService {
                 case EUR, USD -> {
                     try {
                         setFiatMultiplierForNonPLNCurrencies(exchangeRequest, order, currency);
-                    } catch (IOException | ParseException e) {
+                    } catch (ParseException e) {
                         e.printStackTrace();
                     }
                 }
@@ -151,7 +129,7 @@ class BinanceService {
         return fee.multiply(fiatMultiplier);
     }
 
-    private void setFiatMultiplierForNonPLNCurrencies(ExchangeRequest exchangeRequest, List<BinanceOrder> accountOrders, Currency currency) throws IOException, ParseException {
+    private void setFiatMultiplierForNonPLNCurrencies(ExchangeRequest exchangeRequest, List<BinanceOrder> accountOrders, Currency currency) throws ParseException {
         var nbpRates = nbpHelper.getNbpRatesFromCorrespondingYears(exchangeRequest.getFromTime(), exchangeRequest.getToTime(), currency);
         setAllOrdersFiatMultiplierFromDayBeforeTransaction(accountOrders, nbpRates);
     }
@@ -160,8 +138,8 @@ class BinanceService {
         for (var order : accountOrders) {
             var transactionTime = order.getTransactionTime();
             while (true) {
-                String previousDay = previousDayDate(transactionTime);
-                Optional<NbpRate> nbpRate = nbpRates.stream().filter(rate -> rate.getEffectiveDate().equals(previousDay)).findAny();
+                var previousDay = previousDayDate(transactionTime);
+                var nbpRate = nbpRates.stream().filter(rate -> rate.getEffectiveDate().equals(previousDay)).findAny();
                 if (nbpRate.isPresent()) {
                     order.setFiatMultiplier(nbpRate.get().getMid());
                     break;

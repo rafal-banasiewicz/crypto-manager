@@ -1,7 +1,6 @@
 package pl.rb.manager.exchange.zonda;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.itextpdf.text.DocumentException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
@@ -31,23 +30,21 @@ import static pl.rb.manager.exchange.utils.DatesHelper.formatDate;
 import static pl.rb.manager.exchange.utils.DatesHelper.previousDayDate;
 
 @Service
+public
 class ZondaService {
 
-    private final ZondaHttpRequestBuilder zondaHttpRequestBuilder;
+    private final ZondaClient zondaClient;
     private final ZondaPdfProvider zondaPdfProvider;
     private final NbpHelper nbpHelper;
-    private final RestTemplate restTemplate;
 
-    ZondaService(ZondaHttpRequestBuilder zondaHttpRequestBuilder, ZondaPdfProvider zondaPdfProvider, NbpHelper nbpHelper,
-                 @Qualifier("zondaRestTemplate") RestTemplate restTemplate) {
-        this.zondaHttpRequestBuilder = zondaHttpRequestBuilder;
+    ZondaService(ZondaClient zondaClient, ZondaPdfProvider zondaPdfProvider, NbpHelper nbpHelper) {
+        this.zondaClient = zondaClient;
         this.zondaPdfProvider = zondaPdfProvider;
         this.nbpHelper = nbpHelper;
-        this.restTemplate = restTemplate;
     }
 
 
-    String getSpendings(ExchangeRequest exchangeRequest) throws NoSuchAlgorithmException, InvalidKeyException, IOException, DocumentException, ParseException {
+    public String getSpendings(ExchangeRequest exchangeRequest) throws Exception {
         var zondaResponses = getZondaResponses(exchangeRequest);
         var ordersBasedOnFiat = getOrdersBasedOnFiat(exchangeRequest.getFiat(), zondaResponses);
         if(isNotPLNCurrency(exchangeRequest)) {
@@ -61,10 +58,8 @@ class ZondaService {
     private List<ZondaResponse> getZondaResponses(ExchangeRequest exchangeRequest) throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
         var zondaRequestData = getZondaRequestData(exchangeRequest);
         List<ZondaResponse> zondaResponses = new ArrayList<>();
-        var entity = zondaHttpRequestBuilder.createHttpEntityWithHeaders(zondaRequestData);
         while (true) {
-            var response = restTemplate.exchange(zondaHttpRequestBuilder.getTransactionHistoryUrl(), HttpMethod.GET, entity,
-                    ZondaResponse.class, zondaHttpRequestBuilder.createQueryParams(zondaRequestData)).getBody();
+            var response = zondaClient.getZondaResponse(zondaRequestData);
             if (response.getNextPageCursor().equals(zondaRequestData.getNextPageCursor())) {
                 break;
             }
