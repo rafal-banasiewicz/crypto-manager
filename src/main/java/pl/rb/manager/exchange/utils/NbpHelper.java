@@ -17,8 +17,8 @@ public class NbpHelper {
 
     private final RestTemplate restTemplate;
 
-    public NbpHelper(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
+    public NbpHelper() {
+        this.restTemplate = new RestTemplate();
     }
 
     public List<NbpRate> getNbpRatesFromCorrespondingYears(String fromTime, String toTime, Currency currency) {
