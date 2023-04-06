@@ -51,6 +51,6 @@
          th:text="'Sold crypto for: ' + ${spent}" id="sell"></div>
     <a href="files/MoneySpent.pdf" download><button type="button">Download</button></a>
 </div>
-<iframe src="files/MoneySpent.pdf" width="100%" height="600px"></iframe>
+<iframe th:if="${spent != null} and ${spent != '0'}" src="files/MoneySpent.pdf" width="100%" height="600px"></iframe>
 </body>
 </html>

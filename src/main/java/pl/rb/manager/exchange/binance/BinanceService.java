@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 import pl.rb.manager.exchange.binance.model.BinanceOrder;
 import pl.rb.manager.exchange.binance.model.BinancePdfData;
@@ -48,18 +49,21 @@ class BinanceService {
         var entity = binanceHttpRequestBuilder.createHttpEntityWithHeader(exchangeRequest.getPublicKey());
         var fiatPaymentsUrl = getFiatPaymentsUrl(exchangeRequest, binanceServerTime);
         var binanceResponse = restTemplate.exchange(fiatPaymentsUrl, HttpMethod.GET, entity, BinanceResponse.class).getBody();
-        binanceResponse.getData().forEach(order -> order.setTransactionTime(formatDate(order.getUpdateTime())));
-        var ordersByCurrency = getOrdersByCurrency(binanceResponse);
-        setFiatMultiplierForEachCurrency(exchangeRequest, ordersByCurrency);
-        var accountOrders = ordersByCurrency.values()
-                .stream()
-                .flatMap(Collection::stream)
-                .sorted(Comparator.comparing(BinanceOrder::getTransactionTime))
-                .toList();
-        var totalSpent = getTotalSpentAmount(accountOrders);
-        var feeSpent = getTotalFeeAmount(accountOrders);
-        binancePdfProvider.createDocument(createPdfData(accountOrders), feeSpent, totalSpent);
-        return totalSpent;
+        if (!CollectionUtils.isEmpty((binanceResponse.getData()))) {
+            binanceResponse.getData().forEach(order -> order.setTransactionTime(formatDate(order.getUpdateTime())));
+            var ordersByCurrency = getOrdersByCurrency(binanceResponse);
+            setFiatMultiplierForEachCurrency(exchangeRequest, ordersByCurrency);
+            var accountOrders = ordersByCurrency.values()
+                    .stream()
+                    .flatMap(Collection::stream)
+                    .sorted(Comparator.comparing(BinanceOrder::getTransactionTime))
+                    .toList();
+            var totalSpent = getTotalSpentAmount(accountOrders);
+            var feeSpent = getTotalFeeAmount(accountOrders);
+            binancePdfProvider.createDocument(createPdfData(accountOrders), feeSpent, totalSpent);
+            return totalSpent;
+        }
+        return "0";
     }
 
     private String getFiatPaymentsUrl(ExchangeRequest exchangeRequest, ResponseEntity<BinanceServerTime> binanceServerTime) throws NoSuchAlgorithmException, InvalidKeyException {
@@ -155,7 +159,7 @@ class BinanceService {
     private void setAllOrdersFiatMultiplierFromDayBeforeTransaction(List<BinanceOrder> accountOrders, List<NbpRate> nbpRates) throws ParseException {
         for (var order : accountOrders) {
             var transactionTime = order.getTransactionTime();
-            while(true) {
+            while (true) {
                 String previousDay = previousDayDate(transactionTime);
                 Optional<NbpRate> nbpRate = nbpRates.stream().filter(rate -> rate.getEffectiveDate().equals(previousDay)).findAny();
                 if (nbpRate.isPresent()) {
