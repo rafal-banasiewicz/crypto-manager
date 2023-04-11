@@ -1,0 +1,7 @@
+version: "1.0"
+services:
+  crypto-manager:
+    image: banasiewiczrafal/crypto-manager:0.0.1-SNAPSHOT
+    ports:
+      - "8080:8080"
+
