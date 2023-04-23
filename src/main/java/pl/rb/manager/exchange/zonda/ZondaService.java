@@ -58,13 +58,11 @@ class ZondaService {
     private List<ZondaResponse> getZondaResponses(ExchangeRequest exchangeRequest) throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
         var zondaRequestData = getZondaRequestData(exchangeRequest);
         List<ZondaResponse> zondaResponses = new ArrayList<>();
-        while (true) {
-            var response = zondaClient.getZondaResponse(zondaRequestData);
-            if (response.getNextPageCursor().equals(zondaRequestData.getNextPageCursor())) {
-                break;
-            }
+        var response = zondaClient.getZondaResponse(zondaRequestData);
+        while (!response.getNextPageCursor().equals(zondaRequestData.getNextPageCursor())) {
             zondaResponses.add(response);
             zondaRequestData.setNextPageCursor(response.getNextPageCursor());
+            response = zondaClient.getZondaResponse(zondaRequestData);
         }
         return zondaResponses;
     }
